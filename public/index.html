@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101a20"><title>BATTLESHOT | אתגר האי</title>
+<style>
+:root{color-scheme:dark;--gold:#d8b46c;--panel:rgba(10,20,25,.86);--line:rgba(216,180,108,.32)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101a20;color:#f3f2ed;font-family:Arial,system-ui,sans-serif}
+#game{position:fixed;inset:0}canvas{display:block}
+.overlay{position:fixed;inset:0;pointer-events:none}.top{position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.brand,.stats,.panel{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(12px);border-radius:16px;box-shadow:0 12px 40px #0005}
+.brand{padding:10px 15px}.brand strong{letter-spacing:3px;color:var(--gold);font-size:20px}.brand small{display:block;color:#b8c2c4;margin-top:4px}
+.stats{padding:10px 14px;display:flex;gap:16px;font-size:13px}.stats b{color:var(--gold)}
+#menu{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(90deg,#09151bd9,#09151b80),radial-gradient(circle at 70% 35%,#416b68 0,#101a20 65%);z-index:5;padding:18px}
+.menu-card{width:min(440px,100%);padding:26px;background:rgba(9,19,24,.88);border:1px solid var(--line);border-radius:22px;box-shadow:0 30px 90px #0009}
+.logo{font-size:clamp(34px,9vw,54px);letter-spacing:5px;color:var(--gold);font-weight:900;text-align:center}
+.subtitle{text-align:center;color:#c0c9c7;margin:6px 0 24px}
+label{display:block;font-size:13px;color:#c8d0cd;margin:12px 0 6px}
+input{width:100%;background:#14242a;border:1px solid #38515a;color:white;padding:13px;border-radius:11px;font-size:16px;outline:none}
+input:focus{border-color:var(--gold)}
+button{border:0;border-radius:11px;padding:13px 16px;font-size:15px;font-weight:700;cursor:pointer}
+.primary{width:100%;background:linear-gradient(135deg,#e6c987,#b98b42);color:#152126;margin-top:14px}
+.secondary{width:100%;background:#20343b;color:#e8ece8;margin-top:9px;border:1px solid #38515a}
+.row{display:flex;gap:8px}.row button{flex:1}
+.note{font-size:12px;color:#9eaeaa;line-height:1.5;text-align:center;margin-top:16px}
+#hud{display:none}.pill{padding:9px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-size:13px}
+#message{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 15px;text-align:center;white-space:nowrap;font-size:13px}
+#touch{display:none;position:absolute;bottom:24px;left:24px;width:112px;height:112px;border-radius:50%;background:#14252b99;border:1px solid #d8b46c66;pointer-events:auto;touch-action:none}
+#stick{position:absolute;left:34px;top:34px;width:44px;height:44px;border-radius:50%;background:#d8b46cdd;box-shadow:0 3px 12px #0007}
+#look{position:absolute;bottom:30px;right:22px;color:#d8b46c;background:#14252b99;padding:12px;border-radius:12px;font-size:12px;pointer-events:none}
+@media(max-width:700px){.top{top:8px;left:8px;right:8px}.stats{gap:8px;font-size:11px;padding:9px}.brand{padding:9px 11px}.brand strong{font-size:16px}.brand small{font-size:10px}#touch{display:block}#message{bottom:150px;font-size:12px;max-width:90vw;white-space:normal}.pill{font-size:11px}}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div class="overlay" id="hud">
+ <div class="top"><div class="brand"><strong>BATTLESHOT</strong><small>אתגר האי · משחק קבוצתי</small></div>
+ <div class="stats"><span>שחקנים <b id="players">1</b></span><span>סמנים <b id="score">0/8</b></span><span class="pill" id="room">חדר —</span></div></div>
+ <div id="message">אספו את סמני האור הפזורים באי ועבדו יחד</div>
+ <div id="touch"><div id="stick"></div></div><div id="look">גררו בצד ימין כדי לסובב את המצלמה</div>
+</div>
+<div id="menu"><div class="menu-card">
+ <div class="logo">BATTLESHOT</div><div class="subtitle">אתגר האי · עולם תלת־ממדי אונליין</div>
+ <label for="playerName">שם שחקן</label><input id="playerName" maxlength="16" placeholder="בחרו שם" autocomplete="nickname">
+ <button class="primary" id="create">יצירת חדר חדש</button>
+ <div class="row"><input id="roomCode" maxlength="6" placeholder="קוד חדר"><button class="secondary" id="join" style="width:42%;margin-top:0">הצטרפות</button></div>
+ <label for="serverUrl">כתובת שרת המשחק</label><input id="serverUrl" placeholder="https://your-server.up.railway.app">
+ <div class="note">גרסת פיתוח ראשונית. המשחק מתמקד בחקר, תנועה ואתגרי איסוף — ללא נשק או פגיעה בשחקנים. כל הדמויות לבושות בבגדים ארוכים וצנועים.</div>
+ <div id="status" class="note">מתחבר לשרת…</div>
+ </div></div>
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+const $=id=>document.getElementById(id);
+let socket=null,scene,camera,renderer,clock,me=null,roomCode="",players=new Map(),beacons=[],keys={},started=false;
+let yaw=0,move={x:0,z:0},touchStart=null,lastEmit=0;
+const beaconPositions=[[-24,-18],[-12,16],[0,-27],[17,-13],[27,14],[-30,5],[8,28],[0,4]];
+const serverInput=$("serverUrl");const DEFAULT_SERVER="https://battleshot-realtime-live-production.up.railway.app";serverInput.value=localStorage.getItem("battleshotServer")||DEFAULT_SERVER;
+function connect(){const url=serverInput.value.trim()||location.origin; if(socket?.connected)return socket; socket=io(url,{transports:["websocket","polling"],timeout:10000,reconnection:true});socket.on("connect",()=>$("status").textContent="מחובר לשרת");socket.on("connect_error",()=>$("status").textContent="לא הצלחנו להתחבר. בדקו את כתובת השרת.");socket.on("room:state",syncRoom);socket.on("room:update",syncRoom);socket.on("player:joined",p=>{addRemote(p);say(p.name+" הצטרף לחדר")});socket.on("player:left",id=>{removeRemote(id)});socket.on("player:moved",p=>{const o=players.get(p.id);if(o){o.position.set(p.x,0,p.z);o.rotation.y=p.rotation}});socket.on("beacon:collected",d=>{const b=beacons[d.id];if(b)b.visible=false;const current=Number($("score").textContent.split("/")[0])||0;$("score").textContent=Math.min(8,current+1)+"/8"});socket.on("round:complete",()=>say("כל סמני האור נאספו! ניצחתם כקבוצה 🎉"));return socket}
+function say(t){$("message").textContent=t}
+function startRoom(create){const s=connect();localStorage.setItem("battleshotServer",serverInput.value.trim());const name=$("playerName").value.trim()||"שחקן";const action=create?"room:create":"room:join";s.emit(action,create?{name}:{name,code:$("roomCode").value},r=>{if(!r?.ok){$("status").textContent=r?.error||"לא ניתן ליצור חדר";return}roomCode=r.code;enterGame(r.state)})}
+$("create").onclick=()=>startRoom(true);$("join").onclick=()=>startRoom(false);
+function enterGame(state){$("menu").style.display="none";$("hud").style.display="block";$("room").textContent="חדר "+roomCode;init3D();syncRoom(state);started=true}
+function syncRoom(state){if(!state)return;$("players").textContent=state.players.length;for(const p of state.players){if(p.id===socket.id){if(!me){me=makeAvatar(p.color,true);scene.add(me)}continue}addRemote(p)}if(Array.isArray(state.collected)){for(const id of state.collected){const b=beacons[Number(id)];if(b)b.visible=false}}$("score").textContent=(state.collected?.length||0)+"/8";}
+function makeAvatar(color,isLocal=false){const group=new THREE.Group();const mat=new THREE.MeshStandardMaterial({color,roughness:.9});const dark=new THREE.MeshStandardMaterial({color:0x25333a,roughness:1});const skin=new THREE.MeshStandardMaterial({color:0xc58d6a,roughness:1});const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.42,.75,5,8),mat);torso.position.y=1.28;group.add(torso);const head=new THREE.Mesh(new THREE.SphereGeometry(.27,12,10),skin);head.position.y=2.08;group.add(head);const legs=new THREE.Mesh(new THREE.CapsuleGeometry(.17,.55,4,7),dark);legs.position.set(-.18,.48,0);group.add(legs);const leg2=legs.clone();leg2.position.x=.18;group.add(leg2);const pack=new THREE.Mesh(new THREE.BoxGeometry(.48,.65,.22),dark);pack.position.set(0,1.35,-.34);group.add(pack);group.userData.local=isLocal;return group}
+function addRemote(p){if(!scene||!p||p.id===socket.id||players.has(p.id))return;const a=makeAvatar(p.color);a.position.set(p.x,0,p.z);scene.add(a);players.set(p.id,a)}
+function removeRemote(id){const a=players.get(id);if(a){scene.remove(a);players.delete(id)}$("players").textContent=players.size+1}
+function init3D(){scene=new THREE.Scene();scene.background=new THREE.Color(0x9fc3c9);scene.fog=new THREE.Fog(0x9fc3c9,45,110);camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,200);renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;$("game").appendChild(renderer.domElement);clock=new THREE.Clock();scene.add(new THREE.HemisphereLight(0xe8f5f3,0x56634e,2));const sun=new THREE.DirectionalLight(0xffe0aa,2.2);sun.position.set(-25,40,20);sun.castShadow=true;scene.add(sun);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(110,110,1,1),new THREE.MeshStandardMaterial({color:0x647c58,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+const water=new THREE.Mesh(new THREE.PlaneGeometry(180,180),new THREE.MeshStandardMaterial({color:0x4b8790,roughness:.45,metalness:.1}));water.rotation.x=-Math.PI/2;water.position.y=-.22;scene.add(water);
+for(let i=0;i<48;i++){const x=(Math.random()-.5)*85,z=(Math.random()-.5)*85;if(Math.abs(x)<7&&Math.abs(z)<7)continue;const h=2+Math.random()*5;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.28,h*.5,6),new THREE.MeshStandardMaterial({color:0x584a39}));trunk.position.set(x,h*.25,z);scene.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.2+Math.random(),h,7),new THREE.MeshStandardMaterial({color:0x355c48,roughness:1}));crown.position.set(x,h*.8,z);scene.add(crown)}
+for(let i=0;i<10;i++){const x=(Math.random()-.5)*75,z=(Math.random()-.5)*75;const w=3+Math.random()*4,h=2+Math.random()*3;const house=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),new THREE.MeshStandardMaterial({color:0xb6a78c,roughness:1}));house.position.set(x,h/2,z);scene.add(house);const roof=new THREE.Mesh(new THREE.ConeGeometry(w*.8,1.5,4),new THREE.MeshStandardMaterial({color:0x56636a}));roof.position.set(x,h+0.7,z);roof.rotation.y=Math.PI/4;scene.add(roof)}
+beaconPositions.forEach((p,i)=>{const g=new THREE.Group();const orb=new THREE.Mesh(new THREE.IcosahedronGeometry(.48,1),new THREE.MeshStandardMaterial({color:0xf5cf73,emissive:0x9c641a,emissiveIntensity:1.8,roughness:.2}));orb.position.y=1.4;g.add(orb);const ring=new THREE.Mesh(new THREE.TorusGeometry(.72,.06,8,24),new THREE.MeshStandardMaterial({color:0xffdf8c,emissive:0x88551a}));ring.rotation.x=Math.PI/2;ring.position.y=.2;g.add(ring);g.position.set(p[0],0,p[1]);g.userData.id=i;scene.add(g);beacons.push(g)});
+if(!me){me=makeAvatar(0xc6a36a,true);scene.add(me)}window.addEventListener("resize",resize);renderer.setAnimationLoop(tick)}
+function resize(){if(!camera)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+function tick(){if(!started||!renderer)return;const dt=Math.min(clock.getDelta(),.05);const speed=8;const forward=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-move.z;const side=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+move.x;const v=new THREE.Vector3(side,0,-forward);if(v.lengthSq()>0){v.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),yaw);me.position.addScaledVector(v,speed*dt);me.position.x=THREE.MathUtils.clamp(me.position.x,-42,42);me.position.z=THREE.MathUtils.clamp(me.position.z,-42,42);me.rotation.y=Math.atan2(v.x,v.z)}const target=new THREE.Vector3(me.position.x+Math.sin(yaw)*8,5.5,me.position.z+Math.cos(yaw)*8);camera.position.lerp(target,1-Math.pow(.001,dt));camera.lookAt(me.position.x,1.2,me.position.z);
+for(const b of beacons){if(!b.visible)continue;b.rotation.y+=dt*.8;b.children[0].position.y=1.4+Math.sin(performance.now()*.002+b.userData.id)*.16;if(me.position.distanceTo(b.position)<1.8){socket.emit("beacon:collect",{id:b.userData.id},r=>{if(r?.ok)b.visible=false})}}
+const now=performance.now();if(socket?.connected&&now-lastEmit>70){lastEmit=now;socket.emit("player:move",{x:me.position.x,z:me.position.z,rotation:me.rotation.y})}renderer.render(scene,camera)}
+addEventListener("keydown",e=>{keys[e.code]=true});addEventListener("keyup",e=>{keys[e.code]=false});
+let dragging=false,lastX=0;addEventListener("pointerdown",e=>{if(e.clientX>innerWidth*.48){dragging=true;lastX=e.clientX}});addEventListener("pointermove",e=>{if(dragging){yaw+=(e.clientX-lastX)*.006;lastX=e.clientX}});addEventListener("pointerup",()=>dragging=false);
+const pad=$("touch"),stick=$("stick");pad.addEventListener("pointerdown",e=>{pad.setPointerCapture(e.pointerId);touchStart={x:e.clientX,y:e.clientY}});pad.addEventListener("pointermove",e=>{if(!touchStart)return;const dx=e.clientX-touchStart.x,dy=e.clientY-touchStart.y;const len=Math.max(1,Math.hypot(dx,dy));const x=dx/Math.max(38,len),y=dy/Math.max(38,len);move={x,z:y};stick.style.transform=`translate(${x*28}px,${y*28}px)`});function stopTouch(){touchStart=null;move={x:0,z:0};stick.style.transform="translate(0,0)"}pad.addEventListener("pointerup",stopTouch);pad.addEventListener("pointercancel",stopTouch);
+</script>
+</body></html>
