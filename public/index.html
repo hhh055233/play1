@@ -36,7 +36,7 @@ button{border:0;border-radius:11px;padding:13px 16px;font-size:15px;font-weight:
 <div class="overlay" id="hud">
  <div class="top"><div class="brand"><strong>BATTLESHOT</strong><small>אתגר האי · משחק קבוצתי</small></div>
  <div class="stats"><span>שחקנים <b id="players">1</b></span><span>סמנים <b id="score">0/8</b></span><span class="pill" id="room">חדר —</span></div></div>
- <div id="message">אספו את סמני האור הפזורים באי ועבדו יחד</div>
+ <div id="message">כולם מתחילים ברחבת המפגש. מכאן יוצאים יחד לחקור את האי!</div>
  <div id="touch"><div id="stick"></div></div><div id="look">גררו בצד ימין כדי לסובב את המצלמה</div>
 </div>
 <div id="menu"><div class="menu-card">
@@ -54,7 +54,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 const $=id=>document.getElementById(id);
 let socket=null,scene,camera,renderer,clock,me=null,roomCode="",players=new Map(),beacons=[],keys={},started=false,pendingRoomState=null,hasSyncedLocalSpawn=false;
 let yaw=0,move={x:0,z:0},touchStart=null,lastEmit=0;
-const beaconPositions=[[-24,-18],[-12,16],[0,-27],[17,-13],[27,14],[-30,5],[8,28],[0,4]];
+const beaconPositions=[[-24,-18],[-12,16],[0,-27],[17,-13],[27,14],[-30,5],[8,28],[12,4]];
 const serverInput=$("serverUrl");const DEFAULT_SERVER="https://battleshot-realtime-live-production.up.railway.app";serverInput.value=localStorage.getItem("battleshotServer")||DEFAULT_SERVER;
 function connect(){const url=serverInput.value.trim()||location.origin; if(socket?.connected)return socket; socket=io(url,{transports:["websocket","polling"],timeout:10000,reconnection:true});socket.on("connect",()=>$("status").textContent="מחובר לשרת");socket.on("connect_error",()=>$("status").textContent="לא הצלחנו להתחבר. בדקו את כתובת השרת.");socket.on("room:state",syncRoom);socket.on("room:update",syncRoom);socket.on("player:joined",p=>{addRemote(p);say(p.name+" הצטרף לחדר")});socket.on("player:left",id=>{removeRemote(id)});socket.on("player:moved",p=>{const o=players.get(p.id);if(o){o.position.set(p.x,0,p.z);o.rotation.y=p.rotation}});socket.on("beacon:collected",d=>{const b=beacons[d.id];if(b)b.visible=false;const current=Number($("score").textContent.split("/")[0])||0;$("score").textContent=Math.min(8,current+1)+"/8"});socket.on("round:complete",()=>say("כל סמני האור נאספו! ניצחתם כקבוצה 🎉"));return socket}
 function say(t){$("message").textContent=t}
@@ -66,7 +66,29 @@ function makeAvatar(color,isLocal=false){const group=new THREE.Group();const mat
 function addRemote(p){if(!scene||!p||p.id===socket.id||players.has(p.id))return;const a=makeAvatar(p.color);a.position.set(p.x,0,p.z);scene.add(a);players.set(p.id,a)}
 function removeRemote(id){const a=players.get(id);if(a){scene.remove(a);players.delete(id)}$("players").textContent=players.size+1}
 function init3D(){scene=new THREE.Scene();scene.background=new THREE.Color(0x9fc3c9);scene.fog=new THREE.Fog(0x9fc3c9,45,110);camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,200);renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;$("game").appendChild(renderer.domElement);clock=new THREE.Clock();scene.add(new THREE.HemisphereLight(0xe8f5f3,0x56634e,2));const sun=new THREE.DirectionalLight(0xffe0aa,2.2);sun.position.set(-25,40,20);sun.castShadow=true;scene.add(sun);
+
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(110,110,1,1),new THREE.MeshStandardMaterial({color:0x647c58,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+// Shared starting point: a visible meeting plaza where every player spawns together.
+const plazaBase=new THREE.Mesh(new THREE.CylinderGeometry(5.8,6.2,.28,48),new THREE.MeshStandardMaterial({color:0x9a927d,roughness:.92}));
+plazaBase.position.set(0,.02,0);plazaBase.receiveShadow=true;scene.add(plazaBase);
+const plazaTop=new THREE.Mesh(new THREE.CylinderGeometry(5.35,5.8,.12,48),new THREE.MeshStandardMaterial({color:0xc1b28f,roughness:.82}));
+plazaTop.position.set(0,.21,0);scene.add(plazaTop);
+const plazaRing=new THREE.Mesh(new THREE.TorusGeometry(4.9,.11,10,64),new THREE.MeshStandardMaterial({color:0xe5c47d,metalness:.35,roughness:.45,emissive:0x493313}));
+plazaRing.rotation.x=Math.PI/2;plazaRing.position.y=.3;scene.add(plazaRing);
+const plazaCenter=new THREE.Mesh(new THREE.CylinderGeometry(1.25,1.45,.12,32),new THREE.MeshStandardMaterial({color:0x526c69,metalness:.2,roughness:.6}));
+plazaCenter.position.y=.33;scene.add(plazaCenter);
+const plazaPole=new THREE.Mesh(new THREE.CylinderGeometry(.09,.13,4.4,10),new THREE.MeshStandardMaterial({color:0x5b5141,metalness:.3,roughness:.5}));
+plazaPole.position.set(0,2.55,0);scene.add(plazaPole);
+const plazaFlag=new THREE.Mesh(new THREE.BoxGeometry(1.45,.78,.07),new THREE.MeshStandardMaterial({color:0xd4aa5d,roughness:.7,side:THREE.DoubleSide}));
+plazaFlag.position.set(.72,3.95,0);scene.add(plazaFlag);
+const signCanvas=document.createElement("canvas");signCanvas.width=512;signCanvas.height=128;
+const signCtx=signCanvas.getContext("2d");signCtx.fillStyle="rgba(10,22,25,.88)";signCtx.fillRect(0,0,512,128);
+signCtx.strokeStyle="#e2bf78";signCtx.lineWidth=6;signCtx.strokeRect(5,5,502,118);
+signCtx.fillStyle="#f4dfb4";signCtx.font="bold 48px Arial";signCtx.textAlign="center";signCtx.textBaseline="middle";signCtx.fillText("נקודת המפגש",256,64);
+const signTexture=new THREE.CanvasTexture(signCanvas);
+const sign=new THREE.Sprite(new THREE.SpriteMaterial({map:signTexture,transparent:true,depthTest:false}));
+sign.position.set(0,5.35,0);sign.scale.set(8,2,1);scene.add(sign);
+
 const water=new THREE.Mesh(new THREE.PlaneGeometry(180,180),new THREE.MeshStandardMaterial({color:0x4b8790,roughness:.45,metalness:.1}));water.rotation.x=-Math.PI/2;water.position.y=-.22;scene.add(water);
 for(let i=0;i<48;i++){const x=(Math.random()-.5)*85,z=(Math.random()-.5)*85;if(Math.abs(x)<7&&Math.abs(z)<7)continue;const h=2+Math.random()*5;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.28,h*.5,6),new THREE.MeshStandardMaterial({color:0x584a39}));trunk.position.set(x,h*.25,z);scene.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.2+Math.random(),h,7),new THREE.MeshStandardMaterial({color:0x355c48,roughness:1}));crown.position.set(x,h*.8,z);scene.add(crown)}
 for(let i=0;i<10;i++){const x=(Math.random()-.5)*75,z=(Math.random()-.5)*75;const w=3+Math.random()*4,h=2+Math.random()*3;const house=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),new THREE.MeshStandardMaterial({color:0xb6a78c,roughness:1}));house.position.set(x,h/2,z);scene.add(house);const roof=new THREE.Mesh(new THREE.ConeGeometry(w*.8,1.5,4),new THREE.MeshStandardMaterial({color:0x56636a}));roof.position.set(x,h+0.7,z);roof.rotation.y=Math.PI/4;scene.add(roof)}
