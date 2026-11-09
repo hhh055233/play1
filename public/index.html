@@ -48,7 +48,7 @@ button{border:0;border-radius:11px;padding:13px 16px;font-size:15px;font-weight:
  <div class="note">גרסת פיתוח ראשונית. המשחק מתמקד בחקר, תנועה ואתגרי איסוף — ללא נשק או פגיעה בשחקנים. כל הדמויות לבושות בבגדים ארוכים וצנועים.</div>
  <div id="status" class="note">מתחבר לשרת…</div>
  </div></div>
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 const $=id=>document.getElementById(id);
@@ -78,6 +78,6 @@ for(const b of beacons){if(!b.visible)continue;b.rotation.y+=dt*.8;b.children[0]
 const now=performance.now();if(socket?.connected&&now-lastEmit>70){lastEmit=now;socket.emit("player:move",{x:me.position.x,z:me.position.z,rotation:me.rotation.y})}renderer.render(scene,camera)}
 addEventListener("keydown",e=>{keys[e.code]=true});addEventListener("keyup",e=>{keys[e.code]=false});
 let dragging=false,lastX=0;addEventListener("pointerdown",e=>{if(e.clientX>innerWidth*.48){dragging=true;lastX=e.clientX}});addEventListener("pointermove",e=>{if(dragging){yaw+=(e.clientX-lastX)*.006;lastX=e.clientX}});addEventListener("pointerup",()=>dragging=false);
-const pad=$("touch"),stick=$("stick");pad.addEventListener("pointerdown",e=>{pad.setPointerCapture(e.pointerId);touchStart={x:e.clientX,y:e.clientY}});pad.addEventListener("pointermove",e=>{if(!touchStart)return;const dx=e.clientX-touchStart.x,dy=e.clientY-touchStart.y;const len=Math.max(1,Math.hypot(dx,dy));const x=dx/Math.max(38,len),y=dy/Math.max(38,len);move={x,y};stick.style.transform=`translate(${x*28}px,${y*28}px)`});function stopTouch(){touchStart=null;move={x:0,z:0};stick.style.transform="translate(0,0)"}pad.addEventListener("pointerup",stopTouch);pad.addEventListener("pointercancel",stopTouch);
+const pad=$("touch"),stick=$("stick");pad.addEventListener("pointerdown",e=>{pad.setPointerCapture(e.pointerId);touchStart={x:e.clientX,y:e.clientY}});pad.addEventListener("pointermove",e=>{if(!touchStart)return;const dx=e.clientX-touchStart.x,dy=e.clientY-touchStart.y;const len=Math.max(1,Math.hypot(dx,dy));const x=dx/Math.max(38,len),y=dy/Math.max(38,len);move={x,z:y};stick.style.transform=`translate(${x*28}px,${y*28}px)`});function stopTouch(){touchStart=null;move={x:0,z:0};stick.style.transform="translate(0,0)"}pad.addEventListener("pointerup",stopTouch);pad.addEventListener("pointercancel",stopTouch);
 </script>
 </body></html>
