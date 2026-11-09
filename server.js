@@ -17,7 +17,7 @@ app.get("/health", (_req, res) => res.json({ ok: true, game: "BATTLESHOT", mode:
 app.get("/", (_req, res) => res.json({ ok: true, service: "BATTLESHOT realtime server" }));
 
 const rooms = new Map();
-const BEACONS = [[-24,-18],[-12,16],[0,-27],[17,-13],[27,14],[-30,5],[8,28],[0,4]];
+const BEACONS = [[-24,-18],[-12,16],[0,-27],[17,-13],[27,14],[-30,5],[8,28],[12,4]];
 const cleanName = value => String(value || "Player").replace(/[<>\u0000-\u001f]/g, "").trim().slice(0, 16) || "Player";
 const cleanRoom = value => String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
 const newRoomCode = () => crypto.randomBytes(3).toString("hex").toUpperCase();
@@ -123,12 +123,17 @@ io.on("connection", socket => {
 
 function join(socket, room, name) {
   const colors = ["#c6a36a", "#5e9b8b", "#788db8", "#b47d78", "#a4a16b", "#8e83b5"];
+  // Everyone joins at the shared meeting plaza in the middle of the island.
+  // Place each player on a small ring so avatars do not spawn inside one another.
+  const spawnIndex = room.players.size;
+  const spawnAngle = (spawnIndex / 12) * Math.PI * 2;
+  const spawnRadius = 2.2;
   const player = {
     id: socket.id,
     name: cleanName(name),
-    x: (Math.random() - 0.5) * 8,
-    z: (Math.random() - 0.5) * 8,
-    rotation: 0,
+    x: Math.cos(spawnAngle) * spawnRadius,
+    z: Math.sin(spawnAngle) * spawnRadius,
+    rotation: -spawnAngle,
     color: colors[room.players.size % colors.length],
     score: 0
   };
